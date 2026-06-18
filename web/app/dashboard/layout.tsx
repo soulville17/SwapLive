@@ -7,6 +7,7 @@ import {
   BarChart2, TrendingUp, CreditCard, Webhook, Settings,
   Bell, ChevronDown, Zap, Menu, X
 } from 'lucide-react'
+import { LogoutButton } from '@/components/dashboard/LogoutButton'
 
 const NAV_GROUPS = [
   {
@@ -96,6 +97,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
           </div>
           <ChevronDown size={14} className="text-[#44445a]" />
         </div>
+        <LogoutButton />
       </div>
     </div>
   )

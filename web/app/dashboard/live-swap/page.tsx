@@ -2,17 +2,38 @@
 import { useState } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Repeat2, Zap } from 'lucide-react'
+import { Repeat2, Zap, AlertTriangle, XCircle } from 'lucide-react'
+import { usePoints } from '@/lib/hooks/use-points'
 
 export default function LiveSwapPage() {
-  const [running, setRunning] = useState(false)
   const [opts, setOpts] = useState({ mouthMask: true, faceEnhancer: true, manyFaces: false, liveMirror: false })
-  const points = 823
-  const maxPoints = 3000
-  const pct = Math.round((points / maxPoints) * 100)
+  const { balance, isRunning, percentage, alertLevel, estimatedMinutes, startConsuming, stopConsuming } = usePoints(3000)
+
+  function toggleSwap() {
+    if (isRunning) stopConsuming()
+    else startConsuming()
+  }
+
+  const barColor = alertLevel === 'empty' ? '#44445a' : alertLevel === 'critical' ? '#ff2d78' : alertLevel === 'low' ? '#ff9500' : 'linear-gradient(90deg, #00d4ff, #7b2fff)'
 
   return (
     <div className="max-w-5xl space-y-6">
+      {alertLevel === 'critical' && balance > 0 && (
+        <div className="flex items-center gap-3 p-3 rounded-xl border border-[#ff2d78]/30 bg-[#ff2d78]/10 text-sm text-[#ff2d78]">
+          <XCircle size={16} /> <span>⚠️ Moins de 10% de points restants ! <strong>Recharge maintenant</strong></span>
+        </div>
+      )}
+      {alertLevel === 'low' && (
+        <div className="flex items-center gap-3 p-3 rounded-xl border border-orange-500/30 bg-orange-500/10 text-sm text-orange-400">
+          <AlertTriangle size={16} /> <span>Points à 30% — pense à recharger bientôt.</span>
+        </div>
+      )}
+      {alertLevel === 'empty' && (
+        <div className="flex items-center gap-3 p-3 rounded-xl border border-[#44445a]/30 bg-[#44445a]/10 text-sm text-[#8888aa]">
+          <XCircle size={16} /> <span>Plus de points ! Recharge pour continuer.</span>
+        </div>
+      )}
+
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Split view */}
         <div className="lg:col-span-2">
@@ -25,7 +46,7 @@ export default function LiveSwapPage() {
                     <div className="text-3xl mb-2">{i === 0 ? '🎥' : '🎭'}</div>
                     <div className="text-xs" style={{ color: i === 0 ? '#44445a' : '#00d4ff' }}>{label}</div>
                   </div>
-                  {running && i === 1 && (
+                  {isRunning && i === 1 && (
                     <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/40 rounded px-2 py-0.5">
                       <span className="badge-live-dot" />
                       <span className="text-[10px] text-[#00ff88]">LIVE</span>
@@ -36,9 +57,11 @@ export default function LiveSwapPage() {
             </div>
             <div className="p-4 flex items-center justify-between border-t border-white/5">
               <span className="text-xs font-mono text-[#8888aa]">
-                {running ? '● LIVE · 00:04:23 · FPS: 60 · Latence: 8ms' : 'En attente...'}
+                {isRunning ? '● LIVE · FPS: 60 · Latence: 8ms' : 'En attente...'}
               </span>
-              <span className="text-xs text-[#7b2fff] font-mono">{points} pts restants</span>
+              <span className="text-xs font-mono" style={{ color: alertLevel === 'critical' ? '#ff2d78' : alertLevel === 'low' ? '#ff9500' : '#7b2fff' }}>
+                {balance} pts restants
+              </span>
             </div>
           </Card>
         </div>
@@ -58,12 +81,13 @@ export default function LiveSwapPage() {
           </Card>
 
           <Button
-            variant={running ? 'danger' : 'primary'}
+            variant={isRunning ? 'danger' : 'primary'}
             size="lg"
-            className={`w-full text-base py-4 ${running ? '' : 'gap-2'}`}
-            onClick={() => setRunning(!running)}
+            className="w-full text-base py-4"
+            onClick={toggleSwap}
+            disabled={alertLevel === 'empty'}
           >
-            {running ? '⏹ ARRÊTER SWAP' : <><Repeat2 size={18} /> DÉMARRER SWAP</>}
+            {isRunning ? '⏹ ARRÊTER SWAP' : <span className="flex items-center gap-2 justify-center"><Repeat2 size={18} /> DÉMARRER SWAP</span>}
           </Button>
 
           <Card>
@@ -80,7 +104,7 @@ export default function LiveSwapPage() {
 
           <Card>
             <h3 className="text-xs font-bold text-[#44445a] uppercase tracking-wider mb-3">Caméra Virtuelle</h3>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-1">
               <span className="text-[#00ff88]">✅</span>
               <span className="text-sm text-[#f0f0ff]">SwapLive Camera</span>
             </div>
@@ -90,12 +114,12 @@ export default function LiveSwapPage() {
           <Card>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-[#44445a] uppercase tracking-wider flex items-center gap-1"><Zap size={12} /> Points</span>
-              <span className="text-xs font-mono text-[#f0f0ff]">{points} pts</span>
+              <span className="text-xs font-mono text-[#f0f0ff]">{balance} pts</span>
             </div>
             <div className="h-2 rounded-full bg-white/10 overflow-hidden">
-              <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #00d4ff, #7b2fff)' }} />
+              <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${percentage}%`, background: typeof barColor === 'string' && barColor.startsWith('linear') ? barColor : barColor }} />
             </div>
-            <p className="text-xs text-[#44445a] mt-1.5">~{Math.floor(points / 60)}h{String(Math.floor((points % 60) / 1)).padStart(2, '0')}min restantes</p>
+            <p className="text-xs text-[#44445a] mt-1.5">~{estimatedMinutes}min restantes</p>
           </Card>
         </div>
       </div>
