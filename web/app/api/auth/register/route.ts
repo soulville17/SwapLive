@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    const token = signToken({ userId: user.id, email: user.email, role: user.role })
+    const token = await signToken({ userId: user.id, email: user.email, role: user.role })
 
     const response = NextResponse.json({
       user: {
