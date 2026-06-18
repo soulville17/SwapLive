@@ -1,3 +1,4 @@
+'use client'
 import { Card } from '@/components/ui/Card'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { TrendingUp, Trophy, Target } from 'lucide-react'
