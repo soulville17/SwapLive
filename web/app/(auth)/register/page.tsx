@@ -1,94 +1,129 @@
 'use client'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { Eye, EyeOff, Loader2, Check } from 'lucide-react'
+
+function PasswordStrength({ password }: { password: string }) {
+  const checks = [
+    { label: '8 caractères min', ok: password.length >= 8 },
+    { label: 'Majuscule', ok: /[A-Z]/.test(password) },
+    { label: 'Chiffre', ok: /[0-9]/.test(password) },
+  ]
+  const score = checks.filter(c => c.ok).length
+  const colors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-[#00ff88]']
+  return (
+    <div className="mt-2 space-y-1.5">
+      <div className="flex gap-1">
+        {[0,1,2].map(i => (
+          <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i < score ? colors[score] : 'bg-white/10'}`} />
+        ))}
+      </div>
+      <div className="flex gap-3">
+        {checks.map(c => (
+          <span key={c.label} className={`text-[10px] flex items-center gap-1 ${c.ok ? 'text-[#00ff88]' : 'text-[#44445a]'}`}>
+            {c.ok && <Check size={10} />}{c.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export default function RegisterPage() {
+  const router = useRouter()
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', confirm: '' })
-  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, [k]: e.target.value }))
-  const strength = form.password.length > 12 ? 3 : form.password.length > 8 ? 2 : form.password.length > 4 ? 1 : 0
-  const colors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-[#00ff88]']
+  const [showPwd, setShowPwd] = useState(false)
+  const [agreed, setAgreed] = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm(f => ({ ...f, [k]: e.target.value }))
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    if (form.password !== form.confirm) { setError('Les mots de passe ne correspondent pas'); return }
+    if (!agreed) { setError('Accepte les CGU pour continuer'); return }
+    setLoading(true)
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: form.email, password: form.password, firstName: form.firstName, lastName: form.lastName }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || 'Erreur inscription'); return }
+      router.push('/dashboard')
+    } catch {
+      setError('Erreur réseau, réessaie.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
-    <div className="min-h-screen w-full flex">
-      {/* Left */}
-      <div className="hidden lg:flex flex-1 flex-col justify-center px-16 py-12 grid-bg" style={{ background: 'var(--bg-void)' }}>
-        <div className="max-w-md">
-          <div className="text-3xl font-bold mb-2">
-            <span className="text-white">Swap</span><span className="gradient-text">Live</span>
-          </div>
-          <p className="text-[#8888aa] text-lg mb-8">&quot;Deviens qui tu veux, en direct.&quot;</p>
-          <div className="space-y-4">
-            {['15 000+ créateurs nous font confiance', 'Aucune carte requise pour commencer', '100% local — vie privée garantie'].map(t => (
-              <div key={t} className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full bg-[#00ff88]/20 flex items-center justify-center">
-                  <span className="text-[#00ff88] text-xs">✓</span>
-                </div>
-                <span className="text-[#8888aa] text-sm">{t}</span>
-              </div>
-            ))}
-          </div>
+    <div className="min-h-screen flex items-center justify-center p-4 grid-bg" style={{ background: 'var(--bg-primary)' }}>
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <Link href="/" className="inline-flex items-center gap-2 text-2xl font-black font-display mb-4">
+            <span className="text-[#00d4ff]">⬡</span>
+            <span className="text-[#f0f0ff]">Swap</span>
+            <span className="gradient-text">Live</span>
+          </Link>
+          <h1 className="text-2xl font-black font-display text-[#f0f0ff]">Crée ton compte</h1>
+          <p className="text-xs text-[#00d4ff] mt-1 border border-[#00d4ff]/20 bg-[#00d4ff]/5 rounded-full px-3 py-1 inline-block">Essai gratuit · Aucune carte requise</p>
         </div>
-      </div>
-      {/* Right */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12" style={{ background: 'var(--bg-primary)' }}>
-        <div className="glass-card p-10 w-full max-w-md">
-          <div className="mb-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00ff88]/10 border border-[#00ff88]/20 text-[#00ff88] text-xs font-semibold mb-4">
-              <span className="badge-live" /> Essai gratuit · Aucune carte requise
-            </div>
-            <h1 className="text-2xl font-bold text-[#f0f0ff]">Crée ton compte SwapLive</h1>
-          </div>
 
-          <form className="space-y-4" onSubmit={e => e.preventDefault()}>
+        <div className="glass-card p-8">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-[#8888aa] mb-1.5">Prénom</label>
-                <Input placeholder="Konan" value={form.firstName} onChange={set('firstName')} />
+                <label className="text-xs text-[#44445a] block mb-1.5">Prénom</label>
+                <Input placeholder="Konan" value={form.firstName} onChange={set('firstName')} required />
               </div>
               <div>
-                <label className="block text-xs text-[#8888aa] mb-1.5">Nom</label>
+                <label className="text-xs text-[#44445a] block mb-1.5">Nom</label>
                 <Input placeholder="Nzi" value={form.lastName} onChange={set('lastName')} />
               </div>
             </div>
             <div>
-              <label className="block text-xs text-[#8888aa] mb-1.5">Email</label>
-              <Input type="email" placeholder="toi@exemple.com" value={form.email} onChange={set('email')} />
+              <label className="text-xs text-[#44445a] block mb-1.5">Email</label>
+              <Input type="email" placeholder="ton@email.com" value={form.email} onChange={set('email')} required />
             </div>
             <div>
-              <label className="block text-xs text-[#8888aa] mb-1.5">Mot de passe</label>
-              <Input type="password" placeholder="••••••••" value={form.password} onChange={set('password')} />
-              {form.password && (
-                <div className="flex gap-1 mt-2">
-                  {[0,1,2].map(i => (
-                    <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i < strength ? colors[strength] : 'bg-white/10'}`} />
-                  ))}
-                </div>
-              )}
+              <label className="text-xs text-[#44445a] block mb-1.5">Mot de passe</label>
+              <div className="relative">
+                <Input type={showPwd ? 'text' : 'password'} placeholder="••••••••" value={form.password} onChange={set('password')} required className="pr-10" />
+                <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#44445a] hover:text-[#8888aa]">
+                  {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              {form.password && <PasswordStrength password={form.password} />}
             </div>
             <div>
-              <label className="block text-xs text-[#8888aa] mb-1.5">Confirmer le mot de passe</label>
-              <Input type="password" placeholder="••••••••" value={form.confirm} onChange={set('confirm')} />
+              <label className="text-xs text-[#44445a] block mb-1.5">Confirmer le mot de passe</label>
+              <Input type="password" placeholder="••••••••" value={form.confirm} onChange={set('confirm')} required />
             </div>
-            <label className="flex items-start gap-2 text-xs text-[#8888aa] cursor-pointer">
-              <input type="checkbox" className="mt-0.5 accent-[#00d4ff]" />
-              J&apos;accepte les{' '}
-              <Link href="/terms" className="text-[#00d4ff] hover:underline">Conditions d&apos;utilisation</Link>
+
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} className="mt-0.5 accent-[#00d4ff]" />
+              <span className="text-xs text-[#8888aa]">J&apos;accepte les <Link href="/cgu" className="text-[#00d4ff] hover:underline">CGU</Link> et la <Link href="/privacy" className="text-[#00d4ff] hover:underline">politique de confidentialité</Link></span>
             </label>
-            <Button variant="primary" size="lg" className="w-full">Créer mon compte →</Button>
+
+            {error && (
+              <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</div>
+            )}
+
+            <Button type="submit" variant="primary" size="lg" className="w-full gap-2" disabled={loading}>
+              {loading ? <><Loader2 size={16} className="animate-spin" /> Création...</> : 'Créer mon compte →'}
+            </Button>
           </form>
 
-          <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 h-px bg-white/10" />
-            <span className="text-xs text-[#44445a]">ou</span>
-            <div className="flex-1 h-px bg-white/10" />
-          </div>
-          <Button variant="outline" size="lg" className="w-full border-white/10 text-[#f0f0ff]">
-            <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-            Continuer avec Google
-          </Button>
-          <p className="text-center text-sm text-[#8888aa] mt-6">
+          <p className="text-center text-xs text-[#44445a] mt-6">
             Déjà un compte ?{' '}
             <Link href="/login" className="text-[#00d4ff] hover:underline">Se connecter</Link>
           </p>
