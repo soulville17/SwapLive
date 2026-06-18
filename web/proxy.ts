@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyTokenEdge } from '@/lib/auth-edge'
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
 
   if (pathname.startsWith('/api/auth/')) return NextResponse.next()
