@@ -108,6 +108,16 @@ h1, h2, h3, h4, h5, h6 {
   display: inline-block;
 }
 
+.badge-live-dot {
+  animation: pulse-live 2s ease-in-out infinite;
+  background: #00ff88;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
 @keyframes shimmer {
   0% { background-position: -200% center; }
   100% { background-position: 200% center; }
