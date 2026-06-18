@@ -34,9 +34,9 @@ export default function LiveSwapPage() {
         </div>
       )}
 
-      <div className="grid lg:grid-cols-3 gap-6 items-start">
+      <div className="grid lg:grid-cols-4 gap-6 items-start">
         {/* Split view */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-3">
           <Card className="p-0 overflow-hidden">
             <div className="grid grid-cols-2 gap-0.5 bg-black">
               {['Webcam originale', 'Transformé IA'].map((label, i) => (
