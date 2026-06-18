@@ -1,0 +1,195 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String?
+  firstName     String?
+  lastName      String?
+  username      String?   @unique
+  avatarUrl     String?
+  role          Role      @default(USER)
+  country       String?
+  language      String    @default("fr")
+  theme         String    @default("dark")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  subscription    Subscription?
+  payments        Payment[]
+  sessions        LiveSession[]
+  workspaces      Workspace[]
+  userAvatars     UserAvatar[]
+  apiKeys         ApiKey[]
+  webhooks        Webhook[]
+  generatedVideos GeneratedVideo[]
+}
+
+enum Role { USER ADMIN }
+
+model Subscription {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  planSlug          String
+  billingCycle      String   @default("monthly")
+  status            String   @default("active")
+  pointsBalance     Int      @default(0)
+  currentPeriodEnd  DateTime
+  stripeSubId       String?  @unique
+  cancelAtPeriodEnd Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id])
+}
+
+model Plan {
+  id               String  @id @default(cuid())
+  name             String
+  slug             String  @unique
+  durationDays     Int
+  priceFcfa        Int
+  priceEur         Int
+  stripePriceId    String?
+  pointsIncluded   Int
+  maxQuality       String
+  maxWorkspaces    Int
+  hasApiAccess     Boolean @default(false)
+  apiRequestsMonth Int     @default(0)
+  maxAvatarUploads Int
+  isFeatured       Boolean @default(false)
+  isActive         Boolean @default(true)
+  sortOrder        Int     @default(0)
+}
+
+model PointPack {
+  id        String  @id @default(cuid())
+  name      String
+  points    Int
+  priceFcfa Int
+  priceEur  Int
+  stripePriceId String?
+  isFeatured Boolean @default(false)
+  isActive  Boolean @default(true)
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  userId        String
+  type          String
+  planSlug      String?
+  pointPackId   String?
+  amountFcfa    Int?
+  amountEur     Int?
+  currency      String   @default("XOF")
+  provider      String
+  providerPayId String?  @unique
+  paymentMethod String?
+  status        String   @default("pending")
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  confirmedAt   DateTime?
+  user          User     @relation(fields: [userId], references: [id])
+}
+
+model LiveSession {
+  id              String   @id @default(cuid())
+  userId          String
+  avatarId        String?
+  workspaceId     String?
+  durationSeconds Int
+  pointsConsumed  Int
+  quality         String
+  avgFps          Float?
+  avgLatencyMs    Float?
+  platform        String?
+  usedMouthMask   Boolean  @default(false)
+  usedFaceEnhancer Boolean @default(false)
+  startedAt       DateTime
+  endedAt         DateTime
+  user            User     @relation(fields: [userId], references: [id])
+}
+
+model Workspace {
+  id           String   @id @default(cuid())
+  userId       String
+  name         String
+  avatarId     String?
+  quality      String   @default("1080p")
+  fps          Int      @default(30)
+  platform     String?
+  mouthMask    Boolean  @default(true)
+  faceEnhancer Boolean  @default(true)
+  manyFaces    Boolean  @default(false)
+  liveMirror   Boolean  @default(false)
+  lastUsedAt   DateTime?
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model Avatar {
+  id         String   @id @default(cuid())
+  name       String
+  slug       String   @unique
+  imageUrl   String
+  category   String
+  minPlan    String   @default("monthly")
+  isActive   Boolean  @default(true)
+  usageCount Int      @default(0)
+  tags       String[]
+  createdAt  DateTime @default(now())
+  userAvatars UserAvatar[]
+}
+
+model UserAvatar {
+  id         String   @id @default(cuid())
+  userId     String
+  avatarId   String
+  isFavorite Boolean  @default(false)
+  useCount   Int      @default(0)
+  lastUsedAt DateTime?
+  user       User     @relation(fields: [userId], references: [id])
+  avatar     Avatar   @relation(fields: [avatarId], references: [id])
+  @@unique([userId, avatarId])
+}
+
+model GeneratedVideo {
+  id         String   @id @default(cuid())
+  userId     String
+  photoUrl   String
+  videoUrl   String?
+  style      String
+  duration   Int
+  quality    String
+  status     String   @default("processing")
+  pointsCost Int
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model ApiKey {
+  id         String   @id @default(cuid())
+  userId     String
+  name       String
+  keyHash    String   @unique
+  keyPrefix  String
+  lastUsedAt DateTime?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model Webhook {
+  id        String   @id @default(cuid())
+  userId    String
+  url       String
+  events    String[]
+  secret    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
