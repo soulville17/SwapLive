@@ -40,7 +40,7 @@ export default function LiveSwapPage() {
           <Card className="p-0 overflow-hidden">
             <div className="grid grid-cols-2 gap-0.5 bg-black">
               {['Webcam originale', 'Transformé IA'].map((label, i) => (
-                <div key={label} className="flex items-center justify-center relative" style={{ background: i === 1 ? 'linear-gradient(135deg, #0d1a1f, #0d0d20)' : '#050508', minHeight: '320px', height: '40vh' }}>
+                <div key={label} className="flex items-center justify-center relative" style={{ background: i === 1 ? 'linear-gradient(135deg, #0d1a1f, #0d0d20)' : '#050508', minHeight: '450px', height: '70vh' }}>
                   {i === 1 && <div className="absolute inset-0 opacity-10" style={{ background: 'linear-gradient(135deg, #00d4ff, #7b2fff)' }} />}
                   <div className="text-center relative z-10">
                     <div className="text-3xl mb-2">{i === 0 ? '🎥' : '🎭'}</div>
